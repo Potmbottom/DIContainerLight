@@ -4,7 +4,8 @@ using UnityEngine;
 public class PoolGameObject : MonoBehaviour, IPoolObject
 {
     private IPoolManager _pool;
-    private IUnbindableControl[] _unbindable;
+    private IUnbindableControl[] _allUnbindableControls;
+    private PoolGameObject[] _childPoolObjects;
     
     private Vector3 _initialPosition;
     private Vector2 _initialAnchorMin;
@@ -13,14 +14,15 @@ public class PoolGameObject : MonoBehaviour, IPoolObject
     
     private void Awake()
     {
-        _unbindable = GetComponents<IUnbindableControl>();
-        //SaveRectTransformInitState(); 
+        _allUnbindableControls = GetComponentsInChildren<IUnbindableControl>(true);
+        _childPoolObjects = GetComponentsInChildren<PoolGameObject>(true)
+            .Where(o => o != this)
+            .ToArray();
     }
 
     public void OnSpawned(IPoolManager pool)
     {
         _pool = pool;
-        //ResetRectTransform();
     }
     
     public void OnDespawned()
@@ -30,46 +32,31 @@ public class PoolGameObject : MonoBehaviour, IPoolObject
 
     public virtual void Release()
     {
-        var controls = GetComponentsInChildren<IUnbindableControl>(true);
-        foreach (var control in controls)
+        if (_pool == null) return;
+        if (_childPoolObjects != null)
         {
-            control.Unbind();
+            for (var i = 0; i < _childPoolObjects.Length; i++)
+            {
+                var child = _childPoolObjects[i];
+                if (child != null)
+                {
+                    child.Release();
+                }
+            }
         }
         
-        var child = GetComponentsInChildren<PoolGameObject>(true).Where(o => o != this);
-        foreach (var poolableObject in child)
+        if (_allUnbindableControls != null)
         {
-            poolableObject.Release();
-        }
-        
-        foreach (var control in _unbindable)
-        {
-            control.Unbind();
+            for (var i = 0; i < _allUnbindableControls.Length; i++)
+            {
+                var control = _allUnbindableControls[i];
+                if (control != null)
+                {
+                    control.Unbind();
+                }
+            }
         }
         
         _pool.Release(this);
     }
-    
-    private void SaveRectTransformInitState()
-    {
-        if (transform is RectTransform rect)
-        {
-            _initialPosition = rect.position;
-            _initialAnchorMin = rect.anchorMin;
-            _initialAnchorMax = rect.anchorMax;
-            _initialPivot = rect.pivot;
-        }
-    }
-
-    private void ResetRectTransform()
-    {
-        if (transform is RectTransform rect)
-        {
-            rect.pivot = _initialPivot;
-            rect.anchorMin = _initialAnchorMin;
-            rect.anchorMax = _initialAnchorMax;
-            rect.position = _initialPosition;
-        }
-    }
-
 }

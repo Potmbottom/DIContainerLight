@@ -72,27 +72,31 @@ public class DependencyBuilder
     }
     
     //Type root only for debug
-    private int CalculateDepth(Type type, Type rootBinding, int depth = 1)
+    private int CalculateDepth(Type type, HashSet<Type> visited, int depth = 1)
     {
-        if (type.IsPrimitive)
+        if (type.IsPrimitive) return depth;
+        
+        if (!visited.Add(type)) 
         {
-            return depth;
+            return CircularDependencyError(type); 
         }
 
         var methods = _injectionStrategy.GetInjectionMethods(type);
         var fields = _injectionStrategy.GetInjectionFields(type);
-        
+    
+        var maxDepth = depth;
+
         if (methods != null)
         {
             foreach (var method in methods)
             {
-                var parameterTypes = method.GetParameters().Select(argumentInfo => argumentInfo.ParameterType)
-                    .ToArray();
-                foreach (var paramType in parameterTypes)
+                foreach (var paramInfo in method.GetParameters())
                 {
-                    if (paramType == rootBinding)
-                        return CircularDependencyError(rootBinding, type);
-                    depth = CalculateDepth(paramType, rootBinding, depth + 1);
+                    var branchVisited = new HashSet<Type>(visited);
+                    var branchDepth = CalculateDepth(paramInfo.ParameterType, branchVisited, depth + 1);
+                
+                    if (branchDepth == CIRCULAR_DEPENDENCY_ERROR) return CIRCULAR_DEPENDENCY_ERROR;
+                    if (branchDepth > maxDepth) maxDepth = branchDepth;
                 }
             }
         }
@@ -101,18 +105,20 @@ public class DependencyBuilder
         {
             foreach (var field in fields)
             {
-                if (field.FieldType == rootBinding)
-                    return CircularDependencyError(rootBinding, type);
-                depth = CalculateDepth(field.FieldType, rootBinding, depth + 1);
+                var branchVisited = new HashSet<Type>(visited);
+                var branchDepth = CalculateDepth(field.FieldType, branchVisited, depth + 1);
+                
+                if (branchDepth == CIRCULAR_DEPENDENCY_ERROR) return CIRCULAR_DEPENDENCY_ERROR;
+                if (branchDepth > maxDepth) maxDepth = branchDepth;
             }
         }
         
         return depth;
     }
 
-    private int CircularDependencyError(Type target, Type param)
+    private int CircularDependencyError(Type type)
     {
-        Debug.LogError($"Find circular dependency. Inject target {target} param {param}");
+        Debug.LogError($"Find circular dependency. Loop detected at type: {type}");
         return CIRCULAR_DEPENDENCY_ERROR;
     }
 }
