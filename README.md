@@ -138,4 +138,3 @@ While fully functional for the intended scope, the following features are planne
 
 *   **Signals System:** No built-in event bus/signal system (unlike Zenject Signals).
 *   **Async Injection:** No native support for `Task` or `UniTask` based resolution.
-*   **Scene Context Automation:** Currently requires manual setup via `Root` and `ContextManager` rather than dragging a "SceneContext" prefab into the scene.
