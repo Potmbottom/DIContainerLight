@@ -136,5 +136,10 @@ public class PlayerController : MonoBehaviour
 
 While fully functional for the intended scope, the following features are planned or currently missing compared to full-featured frameworks:
 
+## Constraints
+
+*   **Not suited for large binding counts.** Dependency resolution is linear scan — performance degrades noticeably past ~200 bindings per context.
+*   **One constructor rule.** For non-MonoBehaviour classes, the container picks the first parameterized constructor it finds. Multiple constructors with parameters will cause unpredictable behavior.
+*   **Resources-only prefab loading.** `FromPrefab` loads exclusively via `Resources.Load`. No Addressables, no AssetBundle support.
 *   **Signals System:** No built-in event bus/signal system (unlike Zenject Signals).
 *   **Async Injection:** No native support for `Task` or `UniTask` based resolution.
