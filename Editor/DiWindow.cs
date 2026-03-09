@@ -129,7 +129,7 @@ namespace Editor
             {
                 var item = value[i];
                 result.Append(item.Key.GetType().Name);
-                if (i + 1 > value.Count)
+                if (i + 1 < value.Count)
                 {
                     result.Append(",");
                 }
@@ -149,7 +149,7 @@ namespace Editor
             {
                 var genType = genericType[i];
                 result.Append(CreateName(genType));
-                if (i + 1 > genericType.Length)
+                if (i + 1 < genericType.Length)
                 {
                     result.Append(",");
                 }

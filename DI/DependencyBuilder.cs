@@ -59,7 +59,7 @@ public class DependencyBuilder
         var dict = new Dictionary<BindingConstructionModel, int>();
         foreach (var model in bindings)
         {
-            var methodDepth = model.BindingType.IsPrimitive ? 0 : CalculateDepth(model.BindingType, model.BindingType);
+            var methodDepth = model.BindingType.IsPrimitive ? 0 : CalculateDepth(model.BindingType);
 
             if (methodDepth == CIRCULAR_DEPENDENCY_ERROR)
                 break;
@@ -70,8 +70,13 @@ public class DependencyBuilder
         return dict.OrderBy(pair => pair.Value)
             .Select(dict1 => dict1.Key).ToList();
     }
-    
-    //Type root only for debug
+
+    private int CalculateDepth(Type type)
+    {
+        var visited = new HashSet<Type>();
+        return CalculateDepth(type, visited);
+    }
+
     private int CalculateDepth(Type type, HashSet<Type> visited, int depth = 1)
     {
         if (type.IsPrimitive) return depth;
@@ -113,7 +118,7 @@ public class DependencyBuilder
             }
         }
         
-        return depth;
+        return maxDepth;
     }
 
     private int CircularDependencyError(Type type)

@@ -44,17 +44,16 @@ public class DependencyResolver
 
     private object Get(Type getType, Type contractType, object obj, List<BindingModel> bindings)
     {
-        var binding = bindings.FirstOrDefault(model =>
+        for (int i = 0; i < bindings.Count; i++)
         {
-            //duplicate
-            if (model.Contract == null) return false;
-            //concrete type, but not match
-            if (model.Contract != typeof(object) && model.Contract != contractType) return false;
-                
-            //can inject, looking argument type
-            return model.BindingType == getType;
-        });
-        if (binding != null) return binding.Object;
+            var model = bindings[i];
+            
+            if (model.BindingType != getType) continue;
+            if (model.Contract == null) continue;
+            if (model.Contract != typeof(object) && model.Contract != contractType) continue;
+            
+            return model.Object;
+        }
             
         Debug.LogError($"Cant find dependency {getType} for {obj.GetType()}");
         return null;

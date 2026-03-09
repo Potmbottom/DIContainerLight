@@ -21,9 +21,13 @@ public interface IPoolHandler
 public class DiContainer : IResolver, IBinder, IPoolHandler
 {
     private readonly Stack<DiContext> _containersStack = new Stack<DiContext>();
+    
     private readonly IInjectionStrategy _injectionStrategy = new DefaultInjectionStrategy();
     private readonly DependencyResolver _resolver;
     private readonly DependencyBuilder _builder;
+    
+    private List<BindingModel> _cachedBindings;
+    private bool _bindingsDirty = true;
     
     private DiContext _current => _containersStack.Peek();
 
@@ -35,12 +39,14 @@ public class DiContainer : IResolver, IBinder, IPoolHandler
 
     public void AddContext()
     {
-        _containersStack.Push(new DiContext(new DefaultInjectionStrategy()));
+        _containersStack.Push(new DiContext(_injectionStrategy));
+        InvalidateBindingsCache();
     }
 
     public void RemoveContext()
     {
         _containersStack.Pop().Dispose();
+        InvalidateBindingsCache();
     }
 
     public void Resolve(object obj)
@@ -49,10 +55,12 @@ public class DiContainer : IResolver, IBinder, IPoolHandler
         _resolver.Resolve(obj, bindings);
     }
 
-    //Resolving dependencies for top DIContainer
     public void ResolveDependencies()
     {
+        InvalidateBindingsCache();
         var toResolve = _builder.Build(_current.ConstructionData, _current.Bindings);
+        
+        InvalidateBindingsCache();
         var bindings = GetContextBindings();
         foreach (var obj in toResolve)
         {
@@ -63,10 +71,19 @@ public class DiContainer : IResolver, IBinder, IPoolHandler
 
     private List<BindingModel> GetContextBindings()
     {
-        return _containersStack
-            .ToArray()
-            .SelectMany(container => container.Bindings)
-            .ToList();
+        if (_bindingsDirty || _cachedBindings == null)
+        {
+            _cachedBindings = _containersStack
+                .SelectMany(container => container.Bindings)
+                .ToList();
+            _bindingsDirty = false;
+        }
+        return _cachedBindings;
+    }
+    
+    private void InvalidateBindingsCache()
+    {
+        _bindingsDirty = true;
     }
 
     public void AddToBind(BindingConstructionModel constructionModel)

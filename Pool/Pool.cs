@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-public class Pool: IPool
+public class Pool : IPool
 {
     private readonly Queue<object> _pool = new Queue<object>();
     private readonly Func<object> _getFunc;
@@ -15,6 +15,10 @@ public class Pool: IPool
     
     public object Get()
     {
+        if (_pool.Count == 0)
+            throw new InvalidOperationException(
+                $"Pool is empty. Call Expand() before Get(), or use PoolManager which handles this automatically.");
+        
         return _pool.Dequeue();
     }
     
